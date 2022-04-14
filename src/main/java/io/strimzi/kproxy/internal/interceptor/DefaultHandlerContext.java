@@ -14,15 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.strimzi.kproxy.interceptor;
+package io.strimzi.kproxy.internal.interceptor;
 
 import java.nio.ByteBuffer;
 
-/**
- * Provides contextual information to request and response handlers.
- */
-public interface HandlerContext {
-    String channelDescriptor();
+import io.netty.channel.ChannelHandlerContext;
+import io.strimzi.kproxy.interceptor.HandlerContext;
 
-    ByteBuffer allocate(int initialCapacity);
+public class DefaultHandlerContext implements HandlerContext {
+
+    private final ChannelHandlerContext ctx;
+
+    public DefaultHandlerContext(ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+    }
+
+    @Override
+    public String channelDescriptor() {
+        return ctx.channel().toString();
+    }
+
+    @Override
+    public ByteBuffer allocate(int initialCapacity) {
+        return ctx.alloc().buffer(initialCapacity).nioBuffer();
+    }
 }

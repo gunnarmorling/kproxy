@@ -39,8 +39,8 @@ import io.strimzi.kproxy.codec.Correlation;
 import io.strimzi.kproxy.codec.DecodedResponseFrame;
 import io.strimzi.kproxy.codec.KafkaRequestEncoder;
 import io.strimzi.kproxy.codec.KafkaResponseDecoder;
-import io.strimzi.kproxy.interceptor.HandlerContext;
 import io.strimzi.kproxy.interceptor.Interceptor;
+import io.strimzi.kproxy.internal.interceptor.DefaultHandlerContext;
 
 public class KafkaProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
@@ -225,20 +225,6 @@ public class KafkaProxyFrontendHandler extends ChannelInboundHandlerAdapter {
             }
 
             super.channelRead(ctx, msg);
-        }
-    }
-
-    private static class DefaultHandlerContext implements HandlerContext {
-
-        private final ChannelHandlerContext ctx;
-
-        public DefaultHandlerContext(ChannelHandlerContext ctx) {
-            this.ctx = ctx;
-        }
-
-        @Override
-        public String channelDescriptor() {
-            return ctx.channel().toString();
         }
     }
 }

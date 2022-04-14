@@ -32,6 +32,7 @@ import io.strimzi.kproxy.codec.DecodedRequestFrame;
 import io.strimzi.kproxy.codec.KafkaRequestDecoder;
 import io.strimzi.kproxy.codec.KafkaResponseEncoder;
 import io.strimzi.kproxy.interceptor.Interceptor;
+import io.strimzi.kproxy.internal.interceptor.DefaultHandlerContext;
 
 public class KafkaProxyInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -92,11 +93,13 @@ public class KafkaProxyInitializer extends ChannelInitializer<SocketChannel> {
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             if (msg instanceof DecodedRequestFrame) {
                 DecodedRequestFrame decodedFrame = (DecodedRequestFrame) msg;
-
                 if (interceptor.shouldDecodeRequest(decodedFrame.apiKey(), decodedFrame.apiVersion())) {
-                    interceptor.requestHandler().handleRequest(decodedFrame);
+                    interceptor.requestHandler().handleRequest(decodedFrame, new DefaultHandlerContext(ctx));
                 }
             }
+
+            // TODO: when to release ByteBuf allocated via DefaultHandlerContext?
+            // Can we do it here? Note the ByteBuf is referenced from within the "msg" object.
 
             super.channelRead(ctx, msg);
         }
