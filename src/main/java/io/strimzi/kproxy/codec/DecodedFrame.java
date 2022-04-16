@@ -16,10 +16,7 @@
  */
 package io.strimzi.kproxy.codec;
 
-import org.apache.kafka.common.protocol.ApiKeys;
-import org.apache.kafka.common.protocol.ApiMessage;
-import org.apache.kafka.common.protocol.MessageSizeAccumulator;
-import org.apache.kafka.common.protocol.ObjectSerializationCache;
+import org.apache.kafka.common.protocol.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,11 +32,15 @@ public abstract class DecodedFrame<H extends ApiMessage> implements Frame {
     protected final H header;
     protected final ApiMessage body;
     protected final short apiVersion;
+    private int headerAndBodyEncodedLength;
+    private ObjectSerializationCache serializationCache;
+
 
     public DecodedFrame(short apiVersion, H header, ApiMessage body) {
         this.header = header;
         this.apiVersion = apiVersion;
         this.body = body;
+        this.headerAndBodyEncodedLength = -1;
     }
 
     protected abstract short headerVersion();
@@ -61,21 +62,42 @@ public abstract class DecodedFrame<H extends ApiMessage> implements Frame {
     }
 
     @Override
-    public final void encode(ByteBuf out) {
+    public final int estimateEncodeSize() {
+        if (headerAndBodyEncodedLength != -1) {
+            assert serializationCache != null;
+            return headerAndBodyEncodedLength + Integer.BYTES;
+        }
         var headerVersion = headerVersion();
         MessageSizeAccumulator sizer = new MessageSizeAccumulator();
         ObjectSerializationCache cache = new ObjectSerializationCache();
         header().addSize(sizer, cache, headerVersion);
         body().addSize(sizer, cache, apiVersion());
-        ByteBufAccessor writable = new ByteBufAccessor(out);
-        int length = sizer.totalSize();
+        headerAndBodyEncodedLength = sizer.totalSize();
+        serializationCache = cache;
+        return headerAndBodyEncodedLength + Integer.BYTES;
+    }
+
+    public final void encode(ByteBuf out) {
+        int length = headerAndBodyEncodedLength;
+        if (length < 0) {
+            // TO we should release now out
+            out.release();
+            throw new IllegalStateException("encoded size estimation must happen before encoding");
+        }
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("Writing {} with 4 byte length ({}) plus bytes of header {}, and body {} to {}",
                     getClass().getSimpleName(), length, header, body, out);
         }
+        assert out.writableBytes() == estimateEncodeSize();
+        assert out.nioBufferCount() == 1;
+        final ByteBufferAccessor writable = new ByteBufferAccessor(out.nioBuffer(out.writerIndex(), out.writableBytes()));
         writable.writeInt(length);
-        header.write(writable, cache, headerVersion);
-        body.write(writable, cache, apiVersion());
+        header.write(writable, serializationCache, headerVersion());
+        body.write(writable, serializationCache, apiVersion());
+        final int written = writable.buffer().position();
+        assert written == estimateEncodeSize();
+        out.writerIndex(out.writerIndex() + written);
+        // TODO we should release here whatever ByteBuf has been used in the MemoryRecords on the interceptor
     }
 
     @Override

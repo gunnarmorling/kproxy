@@ -35,6 +35,14 @@ public abstract class KafkaMessageEncoder<F extends Frame> extends MessageToByte
      */
 
     protected abstract Logger log();
+    @Override
+    protected ByteBuf allocateBuffer(final ChannelHandlerContext ctx, final F msg, final boolean preferDirect) throws Exception {
+        final int bytes = msg.estimateEncodeSize();
+        if (preferDirect) {
+            return ctx.alloc().ioBuffer(bytes);
+        }
+        return ctx.alloc().heapBuffer(bytes);
+    }
 
     @Override
     protected void encode(ChannelHandlerContext ctx, F frame, ByteBuf out) throws Exception {

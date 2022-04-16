@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 public class KafkaResponseEncoder extends KafkaMessageEncoder<ResponseFrame> {
     private static final Logger LOGGER = LogManager.getLogger(KafkaResponseEncoder.class);
 
+
     @Override
     protected Logger log() {
         return LOGGER;

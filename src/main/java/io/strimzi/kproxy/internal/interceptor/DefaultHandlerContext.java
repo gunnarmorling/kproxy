@@ -16,8 +16,7 @@
  */
 package io.strimzi.kproxy.internal.interceptor;
 
-import java.nio.ByteBuffer;
-
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.strimzi.kproxy.interceptor.HandlerContext;
 
@@ -35,7 +34,7 @@ public class DefaultHandlerContext implements HandlerContext {
     }
 
     @Override
-    public ByteBuffer allocate(int initialCapacity) {
-        return ctx.alloc().buffer(initialCapacity).nioBuffer();
+    public ByteBuf allocate(int initialCapacity) {
+        return ctx.alloc().buffer(initialCapacity);
     }
 }
