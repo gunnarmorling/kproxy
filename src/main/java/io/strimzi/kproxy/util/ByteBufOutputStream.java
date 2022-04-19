@@ -22,6 +22,11 @@ import org.apache.kafka.common.utils.ByteBufferOutputStream;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * This class has been introduced as a work-around to allow using pooled {@link ByteBuf} instances
+ * that are allowed to grow on demand while used on {@link org.apache.kafka.common.record.MemoryRecordsBuilder}
+ * to create records (using {@link NettyMemoryRecords} factory methods).<br>
+ */
 public class ByteBufOutputStream extends ByteBufferOutputStream {
 
     private static final ByteBuffer DUMMY = ByteBuffer.allocate(0);

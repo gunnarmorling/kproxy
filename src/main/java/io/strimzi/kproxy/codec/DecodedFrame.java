@@ -62,7 +62,7 @@ public abstract class DecodedFrame<H extends ApiMessage> implements Frame {
     }
 
     @Override
-    public final int estimateEncodeSize() {
+    public final int estimateEncodedSize() {
         if (headerAndBodyEncodedLength != -1) {
             assert serializationCache != null;
             return headerAndBodyEncodedLength + Integer.BYTES;
@@ -80,22 +80,21 @@ public abstract class DecodedFrame<H extends ApiMessage> implements Frame {
     public final void encode(ByteBuf out) {
         int length = headerAndBodyEncodedLength;
         if (length < 0) {
-            // TO we should release now out
-            out.release();
-            throw new IllegalStateException("encoded size estimation must happen before encoding");
+            LOGGER.warn("Encoding estimation should happen before encoding, if possible");
+            length = estimateEncodedSize();
         }
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("Writing {} with 4 byte length ({}) plus bytes of header {}, and body {} to {}",
                     getClass().getSimpleName(), length, header, body, out);
         }
-        assert out.writableBytes() == estimateEncodeSize();
+        assert out.writableBytes() == estimateEncodedSize();
         assert out.nioBufferCount() == 1;
         final ByteBufferAccessor writable = new ByteBufferAccessor(out.nioBuffer(out.writerIndex(), out.writableBytes()));
         writable.writeInt(length);
         header.write(writable, serializationCache, headerVersion());
         body.write(writable, serializationCache, apiVersion());
         final int written = writable.buffer().position();
-        assert written == estimateEncodeSize();
+        assert written == estimateEncodedSize();
         out.writerIndex(out.writerIndex() + written);
         // TODO we should release here whatever ByteBuf has been used in the MemoryRecords on the interceptor
     }

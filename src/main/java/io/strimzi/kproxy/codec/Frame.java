@@ -23,7 +23,11 @@ import io.netty.buffer.ByteBuf;
  */
 public interface Frame {
 
-    int estimateEncodeSize();
+    /**
+     * Estimate the expected encoded size in bytes of this {@code Frame}.<br>
+     * In particular, written data by {@link #encode(ByteBuf)} should be the same as reported by this method.
+     */
+    int estimateEncodedSize();
     /**
      * Write the frame, including the size prefix, to the given buffer
      * @param out The output buffer

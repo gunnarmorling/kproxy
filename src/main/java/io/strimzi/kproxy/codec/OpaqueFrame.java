@@ -33,10 +33,11 @@ public abstract class OpaqueFrame implements Frame {
     public OpaqueFrame(ByteBuf buf, int length) {
         this.length = length;
         this.buf = buf.asReadOnly();
+        assert buf.readableBytes() == length;
     }
 
     @Override
-    public int estimateEncodeSize() {
+    public int estimateEncodedSize() {
         return length + Integer.BYTES;
     }
 
@@ -46,7 +47,7 @@ public abstract class OpaqueFrame implements Frame {
             LOGGER.trace("Writing {} with 4 byte length ({}) plus {} bytes from buffer {} to {}",
                     getClass().getSimpleName(), length, buf.readableBytes(), buf, out);
         }
-        assert out.writableBytes() == estimateEncodeSize();
+        assert out.writableBytes() == estimateEncodedSize();
         out.writeInt(length);
         out.writeBytes(buf, length);
         buf.release();
